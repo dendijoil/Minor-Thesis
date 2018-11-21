@@ -256,6 +256,7 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         if (dataSensor.size() < (timerCount * 10)) {
             dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z));
         }
+
     }
 
     private String getTimeRecord() {

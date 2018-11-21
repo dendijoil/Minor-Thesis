@@ -66,6 +66,7 @@ public class Home extends AppCompatActivity implements SensorEventListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //Ini baru Loh dari 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);

@@ -2,13 +2,20 @@ package com.example.jol.testing;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -49,10 +56,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Formatter;
+import java.util.Locale;
 import java.util.Random;
 
 
-public class Home extends AppCompatActivity implements SensorEventListener {
+public class Home extends AppCompatActivity implements SensorEventListener, IBaseGpsListener {
 
     private TextView xText, yText, zText;
     private Sensor SensorKu;
@@ -63,6 +72,11 @@ public class Home extends AppCompatActivity implements SensorEventListener {
     TextView resetClock;
     Chronometer mChronometer;
     int timerCount = 1;
+    double longitude = 0, latitude = 0;
+    private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 2;
+    private static final int MY_PERMISSIONS_REQUEST_COARSE_LOCATION = 4;
+    String strUnits = "miles/hour";
+    String strCurrentSpeed, strSpeed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,10 +106,12 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         btSave = findViewById(R.id.btnSave);
         mChronometer = findViewById(R.id.chronometer);
 
+
         //action ketika button start diklik
         btStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                initLocation();
                 timerCount = 1;
                 state = "start";
                 mChronometer.setBase(SystemClock.elapsedRealtime());
@@ -144,6 +160,41 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         });
     }
 
+    private void initLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_FINE_LOCATION);
+        } else {
+            //get Location
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            assert locationManager != null;
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, this);
+            updateSpeed(null);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    initLocation();
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Toast.makeText(this, "Failed To init Location, please Restart the Application !", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
+            // other 'case' lines to check for other
+            // permissions this app might request.
+        }
+    }
+
     private void saveDatatoExcel() {
         //Create Blank workbook atau file excel
         final HSSFWorkbook workbook = new HSSFWorkbook();
@@ -152,7 +203,7 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         //Create row object
         HSSFRow headerRow;
 
-        String[] columns = {"Time", "X", "Y", "Z"};
+        String[] columns = {"Time", "X", "Y", "Z", "Latitude", "Longitude", "Speed(meter/second)"};
         //Header
         headerRow = spreadsheet.createRow(0);
         for (int i = 0; i < columns.length; i++) {
@@ -168,30 +219,12 @@ public class Home extends AppCompatActivity implements SensorEventListener {
             row.createCell(1).setCellValue(data.getX());
             row.createCell(2).setCellValue(data.getY());
             row.createCell(3).setCellValue(data.getZ());
+            row.createCell(4).setCellValue(data.getLatitude());
+            row.createCell(5).setCellValue(data.getLongitude());
+            row.createCell(6).setCellValue(data.getCurrSpeed());
 //            System.out.println(data.getX() + "," + data.getY() + "," + data.getZ());
         }
-
         showDialog(workbook);
-
-        //permission runtime untuk android versi M keatas
-//        Dexter.withActivity(this)
-//                .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-//                .withListener(new PermissionListener() {
-//                    @Override
-//                    public void onPermissionGranted(PermissionGrantedResponse response) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onPermissionDenied(PermissionDeniedResponse response) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
-//
-//                    }
-//                });
     }
 
     private void saveFile(HSSFWorkbook workbook, String fileName) {
@@ -255,7 +288,7 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         yText.setText("Y = " + Y);
         zText.setText("Z = " + Z);
         if (dataSensor.size() < (timerCount * 10)) {
-            dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z));
+            dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z, strCurrentSpeed, latitude, longitude));
         }
 
     }
@@ -293,5 +326,66 @@ public class Home extends AppCompatActivity implements SensorEventListener {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean useMetricUnits() {
+        // return true will make the speed in meters/second, false in miles/hour
+        return true;
+    }
+
+    private void updateSpeed(CLocation location) {
+        // TODO Auto-generated method stub
+        float nCurrentSpeed = 0;
+
+//        If you want to convert Meters/Second to kmph-1 then you need to multipl the Meters/Second answer from 3.6
+//
+//        Speed from kmph-1 = 3.6 * (Speed from ms-1)
+
+        if (location != null) {
+            location.setUseMetricunits(this.useMetricUnits());
+            nCurrentSpeed = location.getSpeed();
+        }
+
+        Formatter fmt = new Formatter(new StringBuilder());
+        fmt.format(Locale.US, "%5.1f", nCurrentSpeed);
+        strCurrentSpeed = fmt.toString();
+        strCurrentSpeed = strCurrentSpeed.replace(' ', '0');
+
+        if (this.useMetricUnits()) {
+            strUnits = "meters/second";
+        }
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+        strSpeed = strCurrentSpeed + " " + strUnits;
+        TextView txtCurrentSpeed = (TextView) this.findViewById(R.id.txtCurrentSpeed);
+        txtCurrentSpeed.setText(strSpeed);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if (location != null) {
+            CLocation myLocation = new CLocation(location, this.useMetricUnits());
+            this.updateSpeed(myLocation);
+        }
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        Toast.makeText(this, "Please Enable Your GPS !", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onGpsStatusChanged(int event) {
+
     }
 }

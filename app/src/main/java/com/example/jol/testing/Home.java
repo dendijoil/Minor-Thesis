@@ -110,6 +110,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         mChronometer = findViewById(R.id.chronometer);
 
         btMap.setEnabled(false);
+//        dummyData();
 
         //action ketika button start diklik
         btStart.setOnClickListener(new View.OnClickListener() {
@@ -171,6 +172,11 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             System.out.println("second : " + (second + 1));
             timerCount = second + 1;
         });
+    }
+
+    private void dummyData() {
+        dataSensor.add(new ModelSensor("time", "x", "y", "z", "0", -6.8924471, 107.6111778));
+        dataSensor.add(new ModelSensor("time", "x", "y", "z", "0", -6.974028, 107.62834));
     }
 
     private void initLocation() {

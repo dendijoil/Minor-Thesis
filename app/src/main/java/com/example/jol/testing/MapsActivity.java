@@ -1,27 +1,31 @@
 package com.example.jol.testing;
 
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+
 import java.util.ArrayList;
+
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private ArrayList<ModelSensor> dataSensor = new ArrayList<>();
-    double firstLng = 0, firstLat = 0, lastLng = 0, lastLat = 0;
+    private ArrayList<LatLng> datalatLng = new ArrayList<>();
+    PolylineOptions lineOptions = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,18 +38,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         dataSensor = getIntent().getParcelableArrayListExtra("data");
 
-        //dapatin posisi latlng pertama kali saat start di tekan (yg nilai latlng nya tidak sama dengan 0)
+        //dapatin posisi latlng
         for (ModelSensor sensor : dataSensor) {
             if (sensor.getLatitude() != 0 && sensor.getLongitude() != 0) {
-                firstLat = sensor.getLatitude();
-                firstLng = sensor.getLongitude();
-                break;
+                datalatLng.add(new LatLng(sensor.getLatitude(), sensor.getLongitude()));
             }
         }
-
-        //dapatin latlng terakhir (posisi terakhir saat stop ditekan
-        lastLat = dataSensor.get(dataSensor.size() - 1).getLatitude();
-        lastLng = dataSensor.get(dataSensor.size() - 1).getLongitude();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -67,17 +65,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in start and stop position
-        LatLng start = new LatLng(firstLat, firstLng);
-        LatLng stop = new LatLng(lastLat, lastLng);
-        mMap.addMarker(new MarkerOptions().position(start).title("Start Position"));
-        mMap.addMarker(new MarkerOptions().position(stop).title("Stop Position"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(start));
+        lineOptions = new PolylineOptions();
+        lineOptions.addAll(datalatLng);
+        lineOptions.width(10);
+        lineOptions.color(Color.RED);
 
-        // Add a thin red line from start to stop.
-        Polyline line = mMap.addPolyline(new PolylineOptions()
-                .add(start, stop)
-                .width(5)
-                .color(Color.RED));
+        if (lineOptions != null) {
+            mMap.addPolyline(lineOptions);
+            // Add a marker in start and stop position and zoom
+            CameraUpdate center = CameraUpdateFactory.newLatLng(datalatLng.get(0));
+            CameraUpdate zoom = CameraUpdateFactory.zoomTo(18);
+            mMap.moveCamera(center);
+            mMap.animateCamera(zoom);
+        }
+
     }
+
 }

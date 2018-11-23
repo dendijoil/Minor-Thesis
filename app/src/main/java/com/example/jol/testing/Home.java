@@ -344,6 +344,9 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         if (location != null) {
             location.setUseMetricunits(this.useMetricUnits());
             nCurrentSpeed = location.getSpeed();
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+            Log.d("latlng", latitude + ", " + longitude);
         }
 
         Formatter fmt = new Formatter(new StringBuilder());
@@ -354,8 +357,6 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         if (this.useMetricUnits()) {
             strUnits = "meters/second";
         }
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
         strSpeed = strCurrentSpeed + " " + strUnits;
         TextView txtCurrentSpeed = (TextView) this.findViewById(R.id.txtCurrentSpeed);
         txtCurrentSpeed.setText(strSpeed);

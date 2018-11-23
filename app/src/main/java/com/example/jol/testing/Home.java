@@ -3,6 +3,7 @@ package com.example.jol.testing;
 import android.Manifest;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -66,8 +67,8 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
     private TextView xText, yText, zText;
     private Sensor SensorKu;
     private SensorManager SM;
-    private Button btStart, btStop, btSave;
-    private ArrayList<ModelSensor> dataSensor;
+    private Button btStart, btStop, btSave, btMap;
+    private ArrayList<ModelSensor> dataSensor = new ArrayList<>();
     private String state = "", X, Y, Z;
     TextView resetClock;
     Chronometer mChronometer;
@@ -77,6 +78,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
     private static final int MY_PERMISSIONS_REQUEST_COARSE_LOCATION = 4;
     String strUnits = "miles/hour";
     String strCurrentSpeed, strSpeed;
+    LocationManager locationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,8 +106,10 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         btStart = findViewById(R.id.btnStart);
         btStop = findViewById(R.id.btnStop);
         btSave = findViewById(R.id.btnSave);
+        btMap = findViewById(R.id.btnMap);
         mChronometer = findViewById(R.id.chronometer);
 
+        btMap.setEnabled(false);
 
         //action ketika button start diklik
         btStart.setOnClickListener(new View.OnClickListener() {
@@ -130,7 +134,10 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             mChronometer.stop();
             //Stop Sensor saat tombol stop diklik
             SM.unregisterListener(Home.this, SensorKu);
+            locationManager.removeUpdates(this);
             Toast.makeText(Home.this, "Sensor Stopped...!", Toast.LENGTH_SHORT).show();
+            if (!dataSensor.isEmpty())
+                btMap.setEnabled(true);
         });
 
         //action ketika button save diklik
@@ -143,6 +150,12 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             } else {
                 Toast.makeText(Home.this, "Data Sensor kosong / sensor masih berjalan !", Toast.LENGTH_SHORT).show();
             }
+        });
+
+        btMap.setOnClickListener(v -> {
+            Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
+            intent.putExtra("data", dataSensor);
+            startActivity(intent);
         });
 
         resetClock.setOnClickListener(v -> {
@@ -168,7 +181,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
                     MY_PERMISSIONS_REQUEST_FINE_LOCATION);
         } else {
             //get Location
-            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, this);
             updateSpeed(null);
         }
@@ -286,7 +299,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         xText.setText("X = " + X);
         yText.setText("Y = " + Y);
         zText.setText("Z = " + Z);
-        if (dataSensor.size() < (timerCount * 10) ) {
+        if (dataSensor.size() < (timerCount * 10)) {
             dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z, strCurrentSpeed, latitude, longitude));
         }
 

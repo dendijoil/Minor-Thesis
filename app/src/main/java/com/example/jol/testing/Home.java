@@ -169,7 +169,6 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         } else {
             //get Location
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            assert locationManager != null;
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, this);
             updateSpeed(null);
         }
@@ -287,7 +286,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         xText.setText("X = " + X);
         yText.setText("Y = " + Y);
         zText.setText("Z = " + Z);
-        if (dataSensor.size() < (timerCount * 10)) {
+        if (dataSensor.size() < (timerCount * 10) ) {
             dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z, strCurrentSpeed, latitude, longitude));
         }
 
@@ -346,6 +345,7 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             nCurrentSpeed = location.getSpeed();
             latitude = location.getLatitude();
             longitude = location.getLongitude();
+            Log.d("speed", String.valueOf(nCurrentSpeed));
             Log.d("latlng", latitude + ", " + longitude);
         }
 

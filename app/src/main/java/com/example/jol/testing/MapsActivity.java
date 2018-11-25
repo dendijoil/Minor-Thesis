@@ -1,12 +1,14 @@
 package com.example.jol.testing;
 
 import android.graphics.Color;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -14,6 +16,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
@@ -26,6 +29,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ArrayList<ModelSensor> dataSensor = new ArrayList<>();
     private ArrayList<LatLng> datalatLng = new ArrayList<>();
     PolylineOptions lineOptions = null;
+    TextView tvDistance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +39,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        tvDistance = findViewById(R.id.txtDistance);
 
         dataSensor = getIntent().getParcelableArrayListExtra("data");
 
@@ -73,12 +78,28 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (lineOptions != null) {
             mMap.addPolyline(lineOptions);
             // Add a marker in start and stop position and zoom
+            mMap.addMarker(new MarkerOptions().position(datalatLng.get(0)).title("Start Position"));
+            mMap.addMarker(new MarkerOptions().position(datalatLng.get(datalatLng.size() - 1)).title("Stop Position"));
             CameraUpdate center = CameraUpdateFactory.newLatLng(datalatLng.get(0));
             CameraUpdate zoom = CameraUpdateFactory.zoomTo(18);
             mMap.moveCamera(center);
             mMap.animateCamera(zoom);
+            tvDistance.setText("Distance = " + String.valueOf(getDistancBetweenTwoPoints()) + " meter");
         }
 
+    }
+
+    private float getDistancBetweenTwoPoints() {
+        double lat1 = datalatLng.get(0).latitude;
+        double lon1 = datalatLng.get(0).longitude;
+        double lat2 = datalatLng.get(datalatLng.size() - 1).latitude;
+        double lon2 = datalatLng.get(datalatLng.size() - 1).longitude;
+
+        float[] distance = new float[2];
+        Location.distanceBetween(lat1, lon1,
+                lat2, lon2, distance);
+
+        return distance[0];
     }
 
 }

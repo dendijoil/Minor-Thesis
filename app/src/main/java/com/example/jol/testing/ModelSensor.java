@@ -17,6 +17,9 @@ public class ModelSensor implements Parcelable {
         this.longitude = longitude;
     }
 
+    public ModelSensor() {
+    }
+
     protected ModelSensor(Parcel in) {
         x = in.readString();
         y = in.readString();

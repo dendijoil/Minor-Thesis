@@ -104,15 +104,29 @@
                 android:text="save data" />
 
             <Button
-                android:id="@+id/btnMap"
+                android:id="@+id/btnExcel"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="12dp"
                 android:layout_weight="1"
-                android:enabled="false"
-                android:text="last position" />
+                android:text="Open Excel" />
 
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtFileLoc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnMap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:text="Open Map"
+            android:visibility="gone" />
     </LinearLayout>
 
 

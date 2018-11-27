@@ -1,6 +1,7 @@
 package com.example.jol.testing;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
@@ -36,6 +39,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
@@ -47,11 +51,16 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -61,16 +70,20 @@ import java.util.Formatter;
 import java.util.Locale;
 import java.util.Random;
 
+import droidninja.filepicker.FilePickerActivity;
+import droidninja.filepicker.FilePickerBuilder;
+import droidninja.filepicker.FilePickerConst;
+
 
 public class Home extends AppCompatActivity implements SensorEventListener, IBaseGpsListener {
 
     private TextView xText, yText, zText;
     private Sensor SensorKu;
     private SensorManager SM;
-    private Button btStart, btStop, btSave, btMap;
+    private Button btStart, btStop, btSave, btMap, btExcel;
     private ArrayList<ModelSensor> dataSensor = new ArrayList<>();
     private String state = "", X, Y, Z;
-    TextView resetClock;
+    TextView resetClock, lokasi;
     Chronometer mChronometer;
     int timerCount = 1;
     double longitude = 0, latitude = 0;
@@ -79,6 +92,8 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
     String strUnits = "miles/hour";
     String strCurrentSpeed, strSpeed;
     LocationManager locationManager;
+    String path, ekstensi;
+    boolean ada;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,16 +116,18 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
         yText = findViewById(R.id.yText);
         zText = findViewById(R.id.zText);
         resetClock = findViewById(R.id.chronoReset);
+        lokasi = findViewById(R.id.txtFileLoc);
 
         // menghubungkan view button dengan controllernya
         btStart = findViewById(R.id.btnStart);
         btStop = findViewById(R.id.btnStop);
         btSave = findViewById(R.id.btnSave);
         btMap = findViewById(R.id.btnMap);
+        btExcel = findViewById(R.id.btnExcel);
         mChronometer = findViewById(R.id.chronometer);
-
-        btMap.setEnabled(false);
 //        dummyData();
+
+        btMap.setVisibility(View.VISIBLE);
 
         //action ketika button start diklik
         btStart.setOnClickListener(new View.OnClickListener() {
@@ -157,6 +174,16 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
             intent.putExtra("data", dataSensor);
             startActivity(intent);
+//            if (ada) {
+//                writedataToObject();
+//            }
+        });
+
+        btExcel.setOnClickListener(v -> {
+            FilePickerBuilder.getInstance().setMaxCount(1)
+                    .setActivityTheme(R.style.AppTheme)
+                    .pickFile(this);
+
         });
 
         resetClock.setOnClickListener(v -> {
@@ -177,6 +204,103 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
     private void dummyData() {
         dataSensor.add(new ModelSensor("time", "x", "y", "z", "0", -6.8924471, 107.6111778));
         dataSensor.add(new ModelSensor("time", "x", "y", "z", "0", -6.974028, 107.62834));
+    }
+
+    private void writedataToObject() {
+        File data = new File(path);
+
+        try {
+            InputStream inputStream = new FileInputStream(data);
+            HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
+            HSSFSheet sheet = workbook.getSheet(" Sensor Acc Data ");
+            int rowsCount = sheet.getPhysicalNumberOfRows();
+            FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            Gson gson = new Gson();
+
+            for (int r = 1; r < rowsCount; r++) {
+                Row row = sheet.getRow(r);
+                ModelSensor modelSensor = new ModelSensor();
+
+                modelSensor.setTime(getCellAsString(row, 0, formulaEvaluator));
+                modelSensor.setX(getCellAsString(row, 1, formulaEvaluator));
+                modelSensor.setY(getCellAsString(row, 2, formulaEvaluator));
+                modelSensor.setZ(getCellAsString(row, 3, formulaEvaluator));
+                modelSensor.setCurrSpeed(getCellAsString(row, 4, formulaEvaluator));
+                modelSensor.setLatitude(Double.parseDouble(getCellAsString(row, 5, formulaEvaluator)));
+                modelSensor.setLongitude(Double.parseDouble(getCellAsString(row, 6, formulaEvaluator)));
+
+                Log.d("data", gson.toJson(modelSensor));
+
+                dataSensor.add(modelSensor);
+            }
+            Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
+            intent.putExtra("data", dataSensor);
+            startActivity(intent);
+        } catch (FileNotFoundException notfound) {
+            Toast.makeText(this, "File tidak ditemukan !", Toast.LENGTH_SHORT).show();
+        } catch (IOException ioeror) {
+            Toast.makeText(this, "telah terjadi error ketika membaca file !", Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    private String getCellAsString(Row row, int colKe, FormulaEvaluator formulaEvaluator) {
+        String value = "";
+
+        try {
+            Cell cell = row.getCell(colKe);
+            CellValue cellValue = formulaEvaluator.evaluate(cell);
+            switch (cellValue.getCellType()) {
+                case BOOLEAN:
+                    value = "" + cellValue.getBooleanValue();
+                    break;
+                case NUMERIC:
+                    value = "" + cellValue.getNumberValue();
+                    break;
+                case STRING:
+                    value = "" + cellValue.getStringValue();
+                    break;
+                case BLANK:
+                    value = "-";
+                    break;
+                default:
+                    Toast.makeText(this, "Unknown Cell Type !", Toast.LENGTH_SHORT).show();
+            }
+        } catch (NullPointerException nullpointer) {
+            Log.e("null pointer", "Ada kolom yang kosong !");
+//            Toast.makeText(InputDataFragment.this.getContext(), "Ada kolom yang kosong !", Toast.LENGTH_SHORT).show();
+        }
+        return value;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case FilePickerConst.REQUEST_CODE_DOC:
+                if (resultCode == Activity.RESULT_OK && data != null) {
+                    ArrayList<String> paths = new ArrayList<>();
+                    paths.addAll(data.getStringArrayListExtra(FilePickerConst.KEY_SELECTED_DOCS));
+                    if (paths.size() > 0) {
+                        String ext = paths.get(0).substring(paths.get(0).lastIndexOf('.') + 1);
+//                        ekstensi = ext;
+                        if (ext.equals("xlsx")) {
+                            path = paths.get(0);
+                            lokasi.setText(paths.get(0));
+                            ada = true;
+                            lokasi.setVisibility(View.VISIBLE);
+                            btMap.setVisibility(View.VISIBLE);
+                        } else if (ext.equals("xls")) {
+                            Toast.makeText(this,
+                                    "Tolong save file anda dengan format excel 2007 - 2013 (.xlsx) !", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this,
+                                    "Format file harus berupa .xlsx !", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+                break;
+        }
     }
 
     private void initLocation() {
@@ -262,6 +386,14 @@ public class Home extends AppCompatActivity implements SensorEventListener, IBas
             fileOut.close();
             // Closing the workbook
             workbook.close();
+            // Tell the media scanner about the new file so that it is
+            // immediately available to the user.
+            MediaScannerConnection.scanFile(this,
+                    new String[]{file.toString()}, null,
+                    (path, uri) -> {
+                        Log.i("ExternalStorage", "Scanned " + path + ":");
+                        Log.i("ExternalStorage", "-> uri=" + uri);
+                    });
             Log.d("path file", "Sensor data has been saved to Data_Sensor.xlsx in " + myDir.getPath() + "!");
             Toast.makeText(Home.this, "Sensor data has been saved to Data_Sensor.xlsx in " + myDir.getPath() + "!", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException eF) {

@@ -98,13 +98,14 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
         tvDistance = findViewById(R.id.txtDistance);
 
         tvDistance.setVisibility(View.GONE);
-        btRefresh.setVisibility(View.GONE);
 
         // menghubungkan view button dengan controllernya
         btStart = findViewById(R.id.btnStart);
         btSave = findViewById(R.id.btnSave);
         btRefresh = findViewById(R.id.btnRefresh);
         mChronometer = findViewById(R.id.chronometer);
+
+        btRefresh.setVisibility(View.GONE);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()

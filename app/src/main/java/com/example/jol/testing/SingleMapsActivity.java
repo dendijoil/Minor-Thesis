@@ -170,17 +170,16 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
             }
         });
 
-        btSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //tombol save hanya bisa berfungsi ketika tombol stop sudah ditekan dan dataSensor tidak kosong
-                if (nextState.equals("start") && !dataSensor.isEmpty()) {
+        btSave.setOnClickListener(v -> {
+            //tombol save hanya bisa berfungsi ketika tombol stop sudah ditekan dan dataSensor tidak kosong
+            if (nextState.equals("start") && !dataSensor.isEmpty()) {
 //                    Toast.makeText(Home.this, "tes", Toast.LENGTH_SHORT).show();
-                    //kode savenya dibuat ke method lain aja, klo ditulis disini kepanjangan, gaenak diliat :v
-                    saveDatatoExcel();
-                } else {
-                    Toast.makeText(SingleMapsActivity.this, "Data Sensor kosong / sensor masih berjalan !", Toast.LENGTH_SHORT).show();
-                }
+                //kode savenya dibuat ke method lain aja, klo ditulis disini kepanjangan, gaenak diliat :v
+                Toast.makeText(this, "Size Data : " + dataSensor.size(), Toast.LENGTH_SHORT).show();
+                Log.d("size", String.valueOf(dataSensor.size()));
+                saveDatatoExcel();
+            } else {
+                Toast.makeText(SingleMapsActivity.this, "Data Sensor kosong / sensor masih berjalan !", Toast.LENGTH_SHORT).show();
             }
         });
 

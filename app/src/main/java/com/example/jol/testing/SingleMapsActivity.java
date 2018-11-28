@@ -19,6 +19,7 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -59,7 +60,7 @@ import java.util.Formatter;
 import java.util.List;
 import java.util.Locale;
 
-public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener, IBaseGpsListener {
+public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener, IBaseGpsListener {
 
     private GoogleMap mMap;
     private TextView xText, yText, zText, tvDistance;
@@ -84,6 +85,8 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_single_maps);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // membuat sensor
         SM = (SensorManager) getSystemService(SENSOR_SERVICE);

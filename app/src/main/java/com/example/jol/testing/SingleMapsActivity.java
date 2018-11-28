@@ -335,7 +335,7 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
                         Log.i("ExternalStorage", "Scanned " + path + ":");
                         Log.i("ExternalStorage", "-> uri=" + uri);
                     });
-            Log.d("path file", "Sensor data has been saved to Data_Sensor.csv in " + myDir.getPath() + "!");
+            Log.d("path file", "Sensor data has been saved to Data_Sensor.xlsx in " + myDir.getPath() + "!");
             Toast.makeText(SingleMapsActivity.this, "Sensor data has been saved to Data_Sensor.xlsx in " + myDir.getPath() + "!", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException eF) {
             Log.d("FileNotFound Exc", eF.getMessage());

@@ -1,17 +1,24 @@
 package com.example.jol.testing;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
+import android.media.MediaScannerConnection;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -22,6 +29,7 @@ import org.apache.poi.ss.usermodel.Row;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -35,7 +43,14 @@ public class MakeDataActivity extends AppCompatActivity {
     private String path;
     boolean ada;
     private View lytRes;
-    private ArrayList<ModelSensor> dataSensor = new ArrayList<>();
+    private ArrayList<ResultModel> finalData = new ArrayList<>();
+
+    //UBAH VARIABLE DIBAWAH SESUAI KEBUTUHAN
+    private static final int NUM_DATA_PER_SECOND = 10;
+    //THRESHOLD
+    private static final double THRESHOLD_X = 0.89611171777;
+    private static final double THRESHOLD_Y = 10.342042659;
+    private static final double THRESHOLD_Z = 0.053279248366666;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,14 +73,12 @@ public class MakeDataActivity extends AppCompatActivity {
         btMake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                writedataToObject();
+                processData();
             }
         });
-
-
     }
 
-    private void writedataToObject() {
+    private void processData() {
         File data = new File(path);
 
         try {
@@ -74,22 +87,97 @@ public class MakeDataActivity extends AppCompatActivity {
             HSSFSheet sheet = workbook.getSheet(" Sensor Acc Data ");
             int rowsCount = sheet.getPhysicalNumberOfRows();
             FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
-            Gson gson = new Gson();
-
+            int currDataCount = 1, numOfSec = 1;
+            double jumX = 0, jumY = 0, jumZ = 0;
+            Log.d("sizeRow", String.valueOf(rowsCount - 1));
             for (int r = 1; r < rowsCount; r++) {
                 Row row = sheet.getRow(r);
-                ModelSensor modelSensor = new ModelSensor();
+                String x = getCellAsString(row, 1, formulaEvaluator);
+                String y = getCellAsString(row, 2, formulaEvaluator);
+                String z = getCellAsString(row, 3, formulaEvaluator);
+                double lat = Double.parseDouble(getCellAsString(row, 4, formulaEvaluator));
+                double lon = Double.parseDouble(getCellAsString(row, 5, formulaEvaluator));
 
-                modelSensor.setTime(getCellAsString(row, 0, formulaEvaluator));
-                modelSensor.setX(getCellAsString(row, 1, formulaEvaluator));
-                modelSensor.setY(getCellAsString(row, 2, formulaEvaluator));
-                modelSensor.setZ(getCellAsString(row, 3, formulaEvaluator));
-                modelSensor.setLatitude(Double.parseDouble(getCellAsString(row, 4, formulaEvaluator)));
-                modelSensor.setLongitude(Double.parseDouble(getCellAsString(row, 5, formulaEvaluator)));
-                modelSensor.setCurrSpeed(getCellAsString(row, 6, formulaEvaluator));
-//                Log.d("data", gson.toJson(modelSensor));
-                dataSensor.add(modelSensor);
+                if (currDataCount <= NUM_DATA_PER_SECOND) {
+                    //selama data yang dibaca kurang dari banyaknya jumlah data dalam 1 detik maka x,y,z akan ditambahkan
+                    jumX += Double.parseDouble(x);
+                    jumY += Double.parseDouble(y);
+                    jumZ += Double.parseDouble(z);
+
+                    if (r == rowsCount - 1 && currDataCount == NUM_DATA_PER_SECOND) {
+                        //data paling akhir harus diolah juga
+                        String hasil = "FALSE";
+                        String time = String.valueOf(numOfSec);
+                        int thX = 0, thY = 0, thZ = 0;
+                        double avgX = jumX / NUM_DATA_PER_SECOND;
+                        double avgY = jumY / NUM_DATA_PER_SECOND;
+                        double avgZ = jumZ / NUM_DATA_PER_SECOND;
+                        if (avgX > THRESHOLD_X)
+                            thX = 1;
+                        if (avgY > THRESHOLD_Y)
+                            thY = 1;
+                        if (avgZ > THRESHOLD_Z)
+                            thZ = 1;
+                        if (thX + thY + thZ >= 2)
+                            hasil = "1";
+
+                        ResultModel model = new ResultModel();
+                        model.setTime(time);
+                        model.setAvgX(String.valueOf(avgX));
+                        model.setAvgY(String.valueOf(avgY));
+                        model.setAvgZ(String.valueOf(avgZ));
+                        model.setThreshX(String.valueOf(thX));
+                        model.setThreshY(String.valueOf(thY));
+                        model.setThreshZ(String.valueOf(thZ));
+                        model.setLatitude(lat);
+                        model.setLongitude(lon);
+                        model.setHasil(hasil);
+
+                        finalData.add(model);
+                    }
+                } else {
+                    //jika sudah = 10 maka data bisa diolah
+                    String hasil = "FALSE";
+                    String time = String.valueOf(numOfSec);
+                    int thX = 0, thY = 0, thZ = 0;
+                    double avgX = jumX / NUM_DATA_PER_SECOND;
+                    double avgY = jumY / NUM_DATA_PER_SECOND;
+                    double avgZ = jumZ / NUM_DATA_PER_SECOND;
+                    if (avgX > THRESHOLD_X)
+                        thX = 1;
+                    if (avgY > THRESHOLD_Y)
+                        thY = 1;
+                    if (avgZ > THRESHOLD_Z)
+                        thZ = 1;
+                    if (thX + thY + thZ >= 2)
+                        hasil = "1";
+
+                    ResultModel model = new ResultModel();
+                    model.setTime(time);
+                    model.setAvgX(String.valueOf(avgX));
+                    model.setAvgY(String.valueOf(avgY));
+                    model.setAvgZ(String.valueOf(avgZ));
+                    model.setThreshX(String.valueOf(thX));
+                    model.setThreshY(String.valueOf(thY));
+                    model.setThreshZ(String.valueOf(thZ));
+                    model.setLatitude(lat);
+                    model.setLongitude(lon);
+                    model.setHasil(hasil);
+
+                    finalData.add(model);
+                    numOfSec++;
+                    currDataCount = 1;
+                    jumX = 0;
+                    jumY = 0;
+                    jumZ = 0;
+
+                    jumX += Double.parseDouble(x);
+                    jumY += Double.parseDouble(y);
+                    jumZ += Double.parseDouble(z);
+                }
+                currDataCount++;
             }
+            saveDatatoExcel();
         } catch (FileNotFoundException notfound) {
             Toast.makeText(this, "File tidak ditemukan !", Toast.LENGTH_SHORT).show();
         } catch (IOException ioeror) {
@@ -125,6 +213,103 @@ public class MakeDataActivity extends AppCompatActivity {
 //            Toast.makeText(InputDataFragment.this.getContext(), "Ada kolom yang kosong !", Toast.LENGTH_SHORT).show();
         }
         return value;
+    }
+
+    private void saveDatatoExcel() {
+        //Create Blank workbook atau file excel
+        final HSSFWorkbook workbook = new HSSFWorkbook();
+        //Create a blank sheet
+        HSSFSheet spreadsheet = workbook.createSheet(" Result ");
+        //Create row object
+        HSSFRow headerRow;
+
+        String[] columns = {"Time(s)", "rata2 x/s", "rata2 y/s", "rata2 z/s",
+                "Threshold X", "Threshold Y", "Threshold Z", "Latitude", "Longitude", "Hasil"};
+        //Header
+        headerRow = spreadsheet.createRow(0);
+        for (int i = 0; i < columns.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(columns[i]);
+        }
+
+        // Create Other rows and cells with sensor data
+        int rowNum = 1;
+        for (ResultModel data : finalData) {
+            HSSFRow row = spreadsheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(data.getTime());
+            row.createCell(1).setCellValue(data.getAvgX());
+            row.createCell(2).setCellValue(data.getAvgY());
+            row.createCell(3).setCellValue(data.getAvgZ());
+            row.createCell(4).setCellValue(data.getThreshX());
+            row.createCell(5).setCellValue(data.getThreshY());
+            row.createCell(6).setCellValue(data.getThreshZ());
+            row.createCell(7).setCellValue(data.getLatitude());
+            row.createCell(8).setCellValue(data.getLongitude());
+            row.createCell(9).setCellValue(data.getHasil());
+//            System.out.println(data.getX() + "," + data.getY() + "," + data.getZ());
+        }
+        showDialog(workbook);
+    }
+
+    private void saveFile(HSSFWorkbook workbook, String fileName) {
+        // Write the output to a file
+        FileOutputStream fileOut = null;
+        try {
+            String root = Environment.getExternalStorageDirectory().toString();
+            File myDir = new File(root + "/Sensor_Data_Result");
+            myDir.mkdirs();
+            String fname = "";
+            fname = "SensorData_Result_" + fileName + ".xlsx";
+            File file = new File(myDir, fname);
+            if (file.exists())
+                file.delete();
+            fileOut = new FileOutputStream(file);
+            workbook.write(fileOut);
+            fileOut.close();
+            // Closing the workbook
+            workbook.close();
+            // Tell the media scanner about the new file so that it is
+            // immediately available to the user.
+            MediaScannerConnection.scanFile(this,
+                    new String[]{file.toString()}, null,
+                    (path, uri) -> {
+                        Log.i("ExternalStorage", "Scanned " + path + ":");
+                        Log.i("ExternalStorage", "-> uri=" + uri);
+                    });
+            Log.d("path file", "Sensor data has been saved to Data_Sensor.xlsx in " + myDir.getPath() + "!");
+            Toast.makeText(MakeDataActivity.this,
+                    "Sensor data Result has been saved to " + fname + " in " + myDir.getPath() + "!", Toast.LENGTH_SHORT).show();
+        } catch (FileNotFoundException eF) {
+            Log.d("FileNotFound Exc", eF.getMessage());
+            eF.printStackTrace();
+        } catch (IOException e) {
+            Log.d("IO Exc", e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void showDialog(HSSFWorkbook workbook) {
+        Dialog dialogOption = new Dialog(this);
+        dialogOption.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialogOption.setContentView(R.layout.dialog_input_filename);
+        dialogOption.setCancelable(true);
+        ViewGroup.LayoutParams params = dialogOption.getWindow().getAttributes();
+        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        dialogOption.getWindow().setAttributes((android.view.WindowManager.LayoutParams) params);
+
+
+        EditText name = dialogOption.findViewById(R.id.etFileName);
+        Button btOk = dialogOption.findViewById(R.id.btOk);
+
+        btOk.setOnClickListener(v -> {
+            if (!name.getText().toString().equals("")) {
+                saveFile(workbook, name.getText().toString());
+                dialogOption.dismiss();
+            } else
+                Toast.makeText(this, "Please fill the File Name", Toast.LENGTH_SHORT).show();
+        });
+        dialogOption.show();
     }
 
     @Override

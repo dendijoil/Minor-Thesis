@@ -153,8 +153,8 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
             int hours = (int) (timeElapsed / 3600000);
             int minutes = (int) (timeElapsed - hours * 3600000) / 60000;
             int second = (int) (timeElapsed - hours * 3600000 - minutes * 60000) / 1000;
-            System.out.println("second : " + (second + 1));
-            timerCount = second + 1;
+            timerCount = (hours * 3600) + (minutes * 60) + (second + 1);
+            System.out.println("timer : " + timerCount);
         });
 
         btRefresh.setOnClickListener(v -> {
@@ -192,6 +192,8 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
 
         // change the state of the bottom sheet
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        bottomSheetBehavior.setHideable(false);
 
         // set callback for changes
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
@@ -241,9 +243,6 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
             longitude = location.getLongitude();
             Log.d("speed", String.valueOf(nCurrentSpeed));
             Log.d("latlng", latitude + ", " + longitude);
-            if (dataSensor.get(dataSensor.size() - 1).getLatitude() != 0) {
-
-            }
         }
 
         Formatter fmt = new Formatter(new StringBuilder());
@@ -319,7 +318,7 @@ public class SingleMapsActivity extends FragmentActivity implements OnMapReadyCa
             File myDir = new File(root + "/Sensor_Data");
             myDir.mkdirs();
             String fname = "";
-            fname = "SensorData_" + fileName + ".csv";
+            fname = "SensorData_" + fileName + ".xlsx";
             File file = new File(myDir, fname);
             if (file.exists())
                 file.delete();

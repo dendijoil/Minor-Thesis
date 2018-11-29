@@ -17,7 +17,7 @@
             android:textAlignment="center"
             android:textSize="30dp"
             android:layout_weight="1"
-            android:text="APLIKASI MEMBACA ACCELEROMETER"
+            android:text="Damaged Road Detector"
             />
 
         <android.support.v7.widget.Toolbar

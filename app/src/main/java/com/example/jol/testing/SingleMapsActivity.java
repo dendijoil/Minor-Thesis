@@ -429,7 +429,7 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
         xText.setText("X = " + X);
         yText.setText("Y = " + Y);
         zText.setText("Z = " + Z);
-        if (dataSensor.size() < (timerCount * 10)) {
+        if ((dataSensor.size() < (timerCount * 10)) && latitude != 0 && longitude != 0) {
             dataSensor.add(new ModelSensor(getTimeRecord(), X, Y, Z, strCurrentSpeed, latitude, longitude));
         }
     }

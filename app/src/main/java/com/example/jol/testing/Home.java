@@ -91,6 +91,9 @@ public class Home extends AppCompatActivity {
         findViewById(R.id.btnMake).setOnClickListener(v ->
                 startActivity(new Intent(this, MakeDataActivity.class)));
 
+        findViewById(R.id.btnResult).setOnClickListener(v ->
+                startActivity(new Intent(this, ResultActivity.class)));
+
     }
 
 

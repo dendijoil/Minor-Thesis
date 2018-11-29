@@ -46,6 +46,9 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -87,6 +90,7 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
         setContentView(R.layout.activity_single_maps);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
 
         // membuat sensor
         SM = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -283,11 +287,11 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
 
     private void saveDatatoExcel() {
         //Create Blank workbook atau file excel
-        final HSSFWorkbook workbook = new HSSFWorkbook();
+        final XSSFWorkbook workbook = new XSSFWorkbook();
         //Create a blank sheet
-        HSSFSheet spreadsheet = workbook.createSheet(" Sensor Acc Data ");
+        XSSFSheet spreadsheet = workbook.createSheet(" Sensor Acc Data ");
         //Create row object
-        HSSFRow headerRow;
+        XSSFRow headerRow;
 
         String[] columns = {"Time", "X", "Y", "Z", "Latitude", "Longitude", "Speed(meter/second)"};
         //Header
@@ -300,7 +304,7 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
         // Create Other rows and cells with sensor data
         int rowNum = 1;
         for (ModelSensor data : dataSensor) {
-            HSSFRow row = spreadsheet.createRow(rowNum++);
+            XSSFRow row = spreadsheet.createRow(rowNum++);
             row.createCell(0).setCellValue(data.getTime());
             row.createCell(1).setCellValue(data.getX());
             row.createCell(2).setCellValue(data.getY());
@@ -313,7 +317,7 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
         showDialog(workbook);
     }
 
-    private void saveFile(HSSFWorkbook workbook, String fileName) {
+    private void saveFile(XSSFWorkbook workbook, String fileName) {
         // Write the output to a file
         FileOutputStream fileOut = null;
         try {
@@ -349,7 +353,7 @@ public class SingleMapsActivity extends AppCompatActivity implements OnMapReadyC
         }
     }
 
-    private void showDialog(HSSFWorkbook workbook) {
+    private void showDialog(XSSFWorkbook workbook) {
         Dialog dialogOption = new Dialog(this);
         dialogOption.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialogOption.setContentView(R.layout.dialog_input_filename);

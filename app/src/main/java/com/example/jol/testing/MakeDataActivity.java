@@ -25,6 +25,9 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,6 +62,7 @@ public class MakeDataActivity extends AppCompatActivity {
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+
         btOpen = findViewById(R.id.btnLoad);
         btMake = findViewById(R.id.btnProc);
         lokasi = findViewById(R.id.txtPath);
@@ -83,8 +87,8 @@ public class MakeDataActivity extends AppCompatActivity {
 
         try {
             InputStream inputStream = new FileInputStream(data);
-            HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
-            HSSFSheet sheet = workbook.getSheet(" Sensor Acc Data ");
+            XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
+            XSSFSheet sheet = workbook.getSheet(" Sensor Acc Data ");
             int rowsCount = sheet.getPhysicalNumberOfRows();
             FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
             int currDataCount = 1, numOfSec = 1;
@@ -193,16 +197,16 @@ public class MakeDataActivity extends AppCompatActivity {
             Cell cell = row.getCell(colKe);
             CellValue cellValue = formulaEvaluator.evaluate(cell);
             switch (cellValue.getCellType()) {
-                case BOOLEAN:
+                case Cell.CELL_TYPE_BOOLEAN:
                     value = "" + cellValue.getBooleanValue();
                     break;
-                case NUMERIC:
+                case Cell.CELL_TYPE_NUMERIC:
                     value = "" + cellValue.getNumberValue();
                     break;
-                case STRING:
+                case Cell.CELL_TYPE_STRING:
                     value = "" + cellValue.getStringValue();
                     break;
-                case BLANK:
+                case Cell.CELL_TYPE_BLANK:
                     value = "-";
                     break;
                 default:
@@ -217,11 +221,11 @@ public class MakeDataActivity extends AppCompatActivity {
 
     private void saveDatatoExcel() {
         //Create Blank workbook atau file excel
-        final HSSFWorkbook workbook = new HSSFWorkbook();
+        final XSSFWorkbook workbook = new XSSFWorkbook();
         //Create a blank sheet
-        HSSFSheet spreadsheet = workbook.createSheet(" Result ");
+        XSSFSheet spreadsheet = workbook.createSheet(" Result ");
         //Create row object
-        HSSFRow headerRow;
+        XSSFRow headerRow;
 
         String[] columns = {"Time(s)", "rata2 x/s", "rata2 y/s", "rata2 z/s",
                 "Threshold X", "Threshold Y", "Threshold Z", "Latitude", "Longitude", "Hasil"};
@@ -235,7 +239,7 @@ public class MakeDataActivity extends AppCompatActivity {
         // Create Other rows and cells with sensor data
         int rowNum = 1;
         for (ResultModel data : finalData) {
-            HSSFRow row = spreadsheet.createRow(rowNum++);
+            XSSFRow row = spreadsheet.createRow(rowNum++);
             row.createCell(0).setCellValue(data.getTime());
             row.createCell(1).setCellValue(data.getAvgX());
             row.createCell(2).setCellValue(data.getAvgY());
@@ -251,7 +255,7 @@ public class MakeDataActivity extends AppCompatActivity {
         showDialog(workbook);
     }
 
-    private void saveFile(HSSFWorkbook workbook, String fileName) {
+    private void saveFile(XSSFWorkbook workbook, String fileName) {
         // Write the output to a file
         FileOutputStream fileOut = null;
         try {
@@ -288,7 +292,7 @@ public class MakeDataActivity extends AppCompatActivity {
         }
     }
 
-    private void showDialog(HSSFWorkbook workbook) {
+    private void showDialog(XSSFWorkbook workbook) {
         Dialog dialogOption = new Dialog(this);
         dialogOption.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialogOption.setContentView(R.layout.dialog_input_filename);

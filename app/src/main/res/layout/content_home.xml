@@ -20,6 +20,15 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:text="MAKE DATA" />
+
+    <Button
+        android:id="@+id/btnResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnMake"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:text="open result DATA" />
 </RelativeLayout>
 
 
